@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 import { serveStatic } from '@hono/node-server/serve-static'
 import dotenv from 'dotenv'
 import { readFileSync, readdirSync } from 'fs'
@@ -8,6 +9,9 @@ import path from 'path'
 import qs from 'querystring'
 import artTemplate from 'art-template'
 import helloRoute from './server/routes/hello'
+import { initializeDatabase } from './server/database'
+import usersRoute from './server/routes/users'
+import postsRoute from './server/routes/posts'
 
 const isDev = import.meta.env.DEV
 const isServer = import.meta.env.MODE === 'server'
@@ -21,7 +25,19 @@ const app = new Hono()
 
 app.use(prettyJSON())
 
-const routes = app.basePath('/jaq').route('/hello', helloRoute)
+initializeDatabase()
+  .then(() => {
+    console.log('Database initialized successfully')
+  })
+  .catch(error => {
+    console.error('Database initialization failed:', error)
+  })
+
+const routes = app
+  .basePath('/jaq')
+  .route('/hello', helloRoute)
+  .route('/api/users', usersRoute)
+  .route('/api/posts', postsRoute)
 
 const proxyConf = {
   '/api/*': {

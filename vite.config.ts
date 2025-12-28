@@ -1,6 +1,7 @@
 import build from '@hono/vite-build/node'
 import devServer from '@hono/vite-dev-server'
 import react from '@vitejs/plugin-react'
+import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin'
 import { readdirSync } from 'fs'
 import path from 'path'
 import { defineConfig, loadEnv } from 'vite'
@@ -69,6 +70,7 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     plugins: [
+      vanillaExtractPlugin(),
       react({ include: /\.(mdx|js|jsx|ts|tsx)$/ }),
       devServer({
         entry: './app.ts',
@@ -96,7 +98,7 @@ export default defineConfig(({ command, mode }) => {
           moduleId: `~react-page-${page}`,
           importMode: 'sync',
           routeStyle: 'next',
-          exclude: ['**/components/*.tsx', '**/components/*.ts', '**/schema.ts', '**/style.ts'],
+          exclude: ['**/components/*.tsx', '**/components/*.ts', '**/schema.ts', '**/style.ts', '**/styles.css.ts'],
           onClientGenerated(clientCode) {
             const routeCode = clientCode.replace(/"element":React\.createElement\((.*?)\)/g, (_, pageName) => {
               return `meta: ${pageName}.pageConfig,${_}`

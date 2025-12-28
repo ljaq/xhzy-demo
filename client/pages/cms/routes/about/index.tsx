@@ -11,6 +11,6 @@ export default function About() {
 
 About.pageConfig = {
   name: '关于',
-  order: 2,
+  order: 3,
   icon: <HomeOutlined />,
 }

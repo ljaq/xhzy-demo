@@ -12,6 +12,6 @@ export default function List() {
 
 List.pageConfig = {
   name: 'list',
-  order: 1,
+  order: 2,
   icon: <HomeOutlined />,
 }

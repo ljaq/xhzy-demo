@@ -10,3 +10,7 @@ export const zbt = {
     url: '/api/app/user-manage/{id}/user-info',
   },
 }
+
+// 用户和文章 API
+export const users = '/jaq/api/users'
+export const posts = '/jaq/api/posts'

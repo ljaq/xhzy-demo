@@ -36,16 +36,10 @@ export default function UserProvider({ children }: { children: React.ReactNode }
   const getUser = useCallback(async () => {
     let user: Omit<UserState, 'themeConfig'>
     try {
-      const res = await request.authority.getXSRF({ method: 'GET' })
-      const roleName = res?.data?.currentUser?.roles?.[0]
-      const auth = res?.data?.auth?.grantedPolicies || {}
-      const userName = res?.data?.currentUser?.userName
-      const authList = Object.keys(auth).filter(item => item.includes('SinodacServerPermissions.'))
-      if (roleName === 'admin') authList.push(MenuAuthority.超级管理员)
       user = {
-        userName: userName,
-        roleName: roleName,
-        authList: authList as (MenuAuthority | ButtonAuthority)[],
+        userName: '',
+        roleName: Role.ADMIN,
+        authList: [],
       }
     } catch (err) {
       user = {
