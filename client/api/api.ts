@@ -12,5 +12,5 @@ export const zbt = {
 }
 
 // 用户和文章 API
-export const users = '/jaq/api/users'
-export const posts = '/jaq/api/posts'
+export const users = '/jaq/api/users/:id'
+export const posts = '/jaq/api/posts/:id'

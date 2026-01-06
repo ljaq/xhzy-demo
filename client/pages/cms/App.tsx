@@ -1,4 +1,4 @@
-import { ConfigProvider, Spin } from 'antd'
+import { ConfigProvider, Spin, App as AppProvider } from 'antd'
 import zh_CN from 'antd/locale/zh_CN'
 import Translate from 'client/components/Animation/Translate'
 import { useUser } from 'client/contexts/useUser'
@@ -26,17 +26,19 @@ function App() {
   }, [])
   return (
     <ConfigProvider locale={zh_CN} theme={{ token: { colorPrimary: themeConfig.color } }}>
-      <EasyModal.Provider>
-        <Layout>
-          <Suspense fallback={<Spin spinning />}>
-            <Translate distance={40}>
-              <div key={pathname} style={{ padding: '0 40px 32px' }}>
-                {useRoutes(useAuthorityRoutes(routes))}
-              </div>
-            </Translate>
-          </Suspense>
-        </Layout>
-      </EasyModal.Provider>
+      <AppProvider>
+        <EasyModal.Provider>
+          <Layout>
+            <Suspense fallback={<Spin spinning />}>
+              <Translate distance={40}>
+                <div key={pathname} style={{ padding: '0 40px 32px' }}>
+                  {useRoutes(useAuthorityRoutes(routes))}
+                </div>
+              </Translate>
+            </Suspense>
+          </Layout>
+        </EasyModal.Provider>
+      </AppProvider>
     </ConfigProvider>
   )
 }

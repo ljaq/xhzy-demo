@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Divider, Pagination, Select, SelectProps, Spin } from 'antd'
-import { Fetch } from 'client/api/utils'
-import { debounce } from 'client/utils'
+import { Fetch } from 'client/api'
+import { debounce } from 'client/utils/common'
 import { useMemo, useState } from 'react'
 
 interface IProps extends SelectProps {

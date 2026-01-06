@@ -6,8 +6,8 @@ import FormRender, { useForm } from '../FormRender'
 interface IProps {
   name: string
   schema: SchemaBase
-  onEdit?: (id: string | number, values: any, orgValues: any) => Promise<void> | void
-  onCreate?: (values: any) => Promise<void> | void
+  onEdit?: (id: string | number, values: any, orgValues: any) => Promise<any> | any
+  onCreate?: (values: any) => Promise<any> | any
   onValuesChange?: (values: any) => void
   labelWidth?: number | string
   idKey?: string
@@ -90,6 +90,7 @@ function CommonEditModal(props: IProps, ref) {
         }
         onCancel()
       } catch (error) {
+        console.log(error)
         setLoading(false)
       }
     },

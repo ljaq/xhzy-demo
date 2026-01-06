@@ -1,81 +1,50 @@
-import { observer } from 'mobx-react-lite'
-import { useEffect, useState } from 'react'
-import { Button, Table, Modal, Form, Input, Select, message, Space, Popconfirm } from 'antd'
-import { FileTextOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
-import { usePostStore } from 'client/stores'
-import { useUserStore } from 'client/stores'
-import * as styles from './styles.css'
-import type { PostModelType } from 'client/stores/UserStore'
+import { Fragment, useRef } from 'react'
+import { Button, Space } from 'antd'
+import { FileTextOutlined } from '@ant-design/icons'
+import CommonTable, { CommonTableInstance } from 'client/components/CommonTable'
+import { request } from 'client/api'
+import CommonEditModal, { CommonEditModalInstance } from 'client/components/CommonEditModal'
+import EasyModal from 'client/utils/easyModal'
+import CommonConfirmModal from 'client/modals/CommonConfirmModal'
+import { formatTime } from 'client/utils/time'
+import { SchemaBase } from 'form-render'
 
-const { TextArea } = Input
+const searchSchema: SchemaBase = {
+  type: 'object',
+  properties: {
+    title: { type: 'string', title: '标题' },
+    authorId: { type: 'number', title: '作者' },
+  },
+}
 
-const PostsPage = observer(() => {
-  const postStore = usePostStore()
-  const userStore = useUserStore()
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingPost, setEditingPost] = useState<PostModelType | null>(null)
-  const [form] = Form.useForm()
-
-  useEffect(() => {
-    postStore.fetchPosts()
-    userStore.fetchUsers()
-  }, [])
-
-  const handleCreate = () => {
-    setEditingPost(null)
-    form.resetFields()
-    setIsModalOpen(true)
-  }
-
-  const handleEdit = (post: PostModelType) => {
-    setEditingPost(post)
-    form.setFieldsValue({
-      title: post.title,
-      content: post.content,
-      authorId: post.authorId,
-    })
-    setIsModalOpen(true)
-  }
-
-  const handleDelete = async (id: number) => {
-    try {
-      await postStore.deletePost(id)
-      message.success('删除成功')
-    } catch (error) {
-      message.error('删除失败')
-    }
-  }
-
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields()
-      if (editingPost) {
-        await postStore.updatePostById(editingPost.id, {
-          title: values.title,
-          content: values.content,
-        })
-        message.success('更新成功')
-      } else {
-        await postStore.createPost({
-          title: values.title,
-          content: values.content,
-          authorId: values.authorId,
-        })
-        message.success('创建成功')
-      }
-      setIsModalOpen(false)
-      form.resetFields()
-    } catch (error) {
-      message.error(editingPost ? '更新失败' : '创建失败')
-    }
-  }
+const postSchema: SchemaBase = {
+  type: 'object',
+  properties: {
+    title: { type: 'string', title: '标题', required: true },
+    content: { type: 'string', title: '内容', required: true },
+    authorId: {
+      type: 'number',
+      title: '作者',
+      widget: 'PageSelector',
+      required: true,
+      props: {
+        url: request.users.get.url,
+        labelKey: 'name',
+        valueKey: 'id',
+        allowClear: true,
+      },
+    },
+  },
+}
+const PostsPage = () => {
+  const modalRef = useRef<CommonEditModalInstance>(null)
+  const tableRef = useRef<CommonTableInstance>(null)
 
   const columns = [
     {
       title: 'ID',
       dataIndex: 'id',
       key: 'id',
-      width: 80,
     },
     {
       title: '标题',
@@ -85,114 +54,82 @@ const PostsPage = observer(() => {
     },
     {
       title: '摘要',
-      key: 'excerpt',
-      render: (_: any, record: PostModelType) => record.excerpt,
+      dataIndex: 'content',
       ellipsis: true,
     },
     {
       title: '作者',
-      key: 'authorName',
-      render: (_: any, record: PostModelType) => record.authorName,
+      dataIndex: 'author',
+      render: (_: any, record: any) => record.author?.name,
     },
     {
       title: '创建时间',
-      key: 'formattedCreatedAt',
-      render: (_: any, record: PostModelType) => record.formattedCreatedAt,
+      dataIndex: 'createdAt',
+      render: (createdAt: string) => formatTime(createdAt),
     },
     {
       title: '操作',
-      key: 'action',
-      render: (_: any, record: PostModelType) => (
+      dataIndex: 'action',
+      render: (_: any, record: any) => (
         <Space>
-          <Button type='link' icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+          <Button type='link' onClick={() => modalRef.current?.show(record)}>
             编辑
           </Button>
-          <Popconfirm
-            title='确定要删除这篇文章吗？'
-            onConfirm={() => handleDelete(record.id)}
-            okText='确定'
-            cancelText='取消'
+
+          <Button
+            type='link'
+            danger
+            onClick={() =>
+              EasyModal.show(CommonConfirmModal, {
+                tip: '确定要$删除$这篇文章吗？',
+                onOk: () => {
+                  return request.posts.delete.params({ id: record.id }).then(() => {
+                    tableRef.current?.fetchData()
+                  })
+                },
+              })
+            }
           >
-            <Button type='link' danger icon={<DeleteOutlined />}>
-              删除
-            </Button>
-          </Popconfirm>
+            删除
+          </Button>
         </Space>
       ),
     },
   ]
 
+  const handleEdit = async (id: number, values: any) => {
+    return request.posts.put
+      .params({ id })
+      .body(values)
+      .then(() => {
+        tableRef.current?.fetchData()
+      })
+  }
+
+  const handleCreate = async (values: any) => {
+    return request.posts.post.body(values).then(() => {
+      tableRef.current?.fetchData()
+    })
+  }
+
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>
-          <FileTextOutlined /> 文章管理
-        </h2>
-        <Button type='primary' icon={<PlusOutlined />} onClick={handleCreate}>
-          新建文章
-        </Button>
-      </div>
-
-      {postStore.error && <div className={styles.error}>{postStore.error}</div>}
-
-      <div className={styles.stats}>
-        <div className={styles.statItem}>
-          <span className={styles.statLabel}>总文章数：</span>
-          <span className={styles.statValue}>{postStore.totalPosts}</span>
-        </div>
-        {postStore.latestPost && (
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>最新文章：</span>
-            <span className={styles.statValue}>{postStore.latestPost.title}</span>
-          </div>
-        )}
-      </div>
-
-      <Table
+    <Fragment>
+      <CommonTable
+        ref={tableRef}
         columns={columns}
-        dataSource={postStore.posts.slice()}
-        rowKey='id'
-        loading={postStore.loading}
-        className={styles.table}
+        search={{ schema: searchSchema }}
+        request={request.posts.get}
+        extra={
+          <Button type='primary' onClick={() => modalRef.current?.show(true)}>
+            创建文章
+          </Button>
+        }
       />
 
-      <Modal
-        title={editingPost ? '编辑文章' : '新建文章'}
-        open={isModalOpen}
-        onOk={handleSubmit}
-        onCancel={() => {
-          setIsModalOpen(false)
-          form.resetFields()
-        }}
-        okText='确定'
-        cancelText='取消'
-        width={600}
-      >
-        <Form form={form} layout='vertical'>
-          <Form.Item name='title' label='标题' rules={[{ required: true, message: '请输入标题' }]}>
-            <Input placeholder='请输入标题' />
-          </Form.Item>
-          <Form.Item name='content' label='内容' rules={[{ required: true, message: '请输入内容' }]}>
-            <TextArea rows={6} placeholder='请输入内容' />
-          </Form.Item>
-          {!editingPost && (
-            <Form.Item name='authorId' label='作者' rules={[{ required: true, message: '请选择作者' }]}>
-              <Select
-                placeholder='请选择作者'
-                showSearch
-                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                options={userStore.users.map(user => ({
-                  value: user.id,
-                  label: user.displayName,
-                }))}
-              />
-            </Form.Item>
-          )}
-        </Form>
-      </Modal>
-    </div>
+      <CommonEditModal ref={modalRef} name='文章' schema={postSchema} onEdit={handleEdit} onCreate={handleCreate} />
+    </Fragment>
   )
-})
+}
 
 PostsPage.pageConfig = {
   name: '文章管理',
